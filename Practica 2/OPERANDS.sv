@@ -56,21 +56,21 @@ module OPERANDS (
         case (estado)
             4'd0, 4'd1, 4'd2, 4'd3: begin // Ingreso de A
                 if (vista) begin // Si vista es 1, se muestran los últimos 2 dígitos de A
-                    visualizar = {regA[7:0], 16'd0}; // Se muestran los últimos 2 dígitos de A en los primeros 2 displays
+                    visualizar = {regA[7:0], 12'd0, 4'hA}; // Se muestran los últimos 2 dígitos de A en los primeros 2 displays
                 end else begin // Si vista es 0, se muestran los primeros 6 dígitos de A
                     visualizar = regA[31:8]; // Se muestran los primeros 6 dígitos de A en los primeros 6 displays
                 end
             end
             4'd4, 4'd5, 4'd6, 4'd7: begin // Ingreso de B
                 if (vista) begin // Si vista es 1, se muestran los últimos 2 dígitos de B
-                    visualizar = {regB[7:0], 16'd0}; // Se muestran los últimos 2 dígitos de B en los primeros 2 displays
+                    visualizar = {regB[7:0], 12'd0, 4'hB}; // Se muestran los últimos 2 dígitos de B en los primeros 2 displays
                 end else begin // Si vista es 0, se muestran los primeros 6 dígitos de B
                     visualizar = regB[31:8]; // Se muestran los primeros 6 dígitos de B en los primeros 6 displays
                 end
             end
             4'd8: begin // En estado SAL se muestra el resultado de la ALU
                 if (vista) begin // Si vista es 1, se muestran los últimos 2 dígitos del resultado
-                    visualizar = {resultado[7:0], 16'd0}; // Se muestran los últimos 2 dígitos del resultado en los primeros 2 displays
+                    visualizar = {resultado[7:0], 12'd0, 4'hF}; // Se muestran los últimos 2 dígitos del resultado en los primeros 2 displays
                 end else begin // Si vista es 0, se muestran los primeros 6 dígitos del resultado
                     visualizar = resultado[31:8]; // Se muestran los primeros 6 dígitos del resultado en los primeros 6 displays
                 end
