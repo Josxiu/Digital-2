@@ -27,18 +27,12 @@ loop:       // for (i = 0; i < N; i++)
     LDR r1, [r5, r7, LSL #2] // Cargar B[i] en r1
 
     // Antes de realizar la resta, se verifica si hay casos especiales como NaN o ±inf
-    BL verificar_casos
+    BL verificar_casos // r0 = verificar_casos(r0, r1)
+    CMP r0, #0 // si r0 == 0, no hay casos especiales y se procede a la resta
+    BNE guardar_resultado // si r0 != 0, se omite la resta
 
-    // Si la función verificar_casos retorna 0, no hay casos especiales
-    // si es diferente de 0, se guarda en R[i] el valor retornado en r0
-    CMP r0, #0
-    BNE guardar_resultado
 
-    /* Algoritmo para realizar R[i] = A[i] - B[i] usando procedimiento ieee754
-     * El programa deberá tener al menos dos funciones que serán llamadas durante
-     * la ejecución. Dichas funciones deberán emplear el Stack para mantener el valo
-     * de los registros que se deberán preservar de acuerdo con la convención de regs
-     */
+    BL realizar_resta // r0 = realizar_resta(r0, r1)
 
 
 /* Almacenar R[i] */
@@ -46,6 +40,14 @@ guardar_resultado:
     STR r0, [r6, r7, LSL #2] // Guardar resultado en R[i]
     ADD r7, r7, #1          // Incrementar contador de restas
     B loop           // Volver al inicio del bucle
+
+
+
+
+
+
+// ************* FUNCIONES ***************
+
 
 
 /*******Función Extraer campos**********/
@@ -77,6 +79,8 @@ extraer_campos:
     
     pop {lr}
     bx lr // Regresar de la función
+
+
 
 
 
@@ -141,7 +145,7 @@ check_ab_inf:
     beq retornar_NaN // if sA == sB, devolver NaN
 
     // si se salta beq entonces los signos son diferentes y llegamos a suma o resta de infinitos
-    cmp r4, #0  // si ea es + entonces eb es -
+    cmp r4, #0  // si expA es positivo entonces expB es negativo
     beq retornar_A // inf + inf = inf devuelve A
     b retornar_A // -inf - inf = -inf devuelve A
 
@@ -165,9 +169,151 @@ fin_verificar_casos:
 
 
 
+/*********** FUNCIÓN alinear_exponentes ***********/
+/*
+    Descripción:
+        Alinea las mantisas de dos números IEEE-754 simple precisión
+        para suma/resta, agregando el bit implícito si corresponde y
+        desplazando la mantisa del número con menor exponente.
+
+    Entradas:
+        r0 = expA   (exponente de A)
+        r1 = mantA  (mantisa de A, sin bit implícito)
+        r2 = expB   (exponente de B)
+        r3 = mantB  (mantisa de B, sin bit implícito)
+    Salidas:
+        r0 = exponente máximo (el que queda después de alinear)
+        r1 = mantA alineada (con bit implícito si corresponde)
+        r2 = mantB alineada (con bit implícito si corresponde)
+*/
+alinear_exponentes:
+    push {r4-r8, lr}
+
+    // Copiar argumentos a registros de trabajo
+    mov r4, r0    // r4 = expA
+    mov r5, r2    // r5 = expB
+    mov r7, r1    // r7 = mantA
+    mov r8, r3    // r8 = mantB
+
+    // --- Agregar bit implícito si el número es normalizado ---
+    cmp r4, #0            // ¿expA == 0? 
+    beq sin_implicito_A   // Si expA = 0, no agregar bit implícito
+    orr r7, r7, #(1 << 23) // Si expA > 0, agregar bit implícito a mantA
+
+sin_implicito_A:
+    cmp r5, #0            // ¿expB == 0?
+    beq sin_implicito_B   // Si expB = 0, no agregar bit implícito
+    orr r8, r8, #(1 << 23) // Si expB > 0, agregar bit implícito a mantB
+
+sin_implicito_B:
+    // --- Comparar exponentes ---
+    cmp r4, r5
+    bgt expA_mayor        // Si expA > expB, desplazar mantB
+    blt expB_mayor        // Si expB > expA, desplazar mantA
+
+    // expA == expB: no se desplaza ninguna mantisa
+    mov r0, r4            // r0 = exponente máximo
+    mov r1, r7            // r1 = mantA alineada
+    mov r2, r8            // r2 = mantB alineada
+    b exp_alineados
+
+// --- expA > expB: desplazar mantB a la derecha ---
+expA_mayor:
+    sub r6, r4, r5        // r6 = expA - expB (cuántos bits desplazar)
+    cmp r6, #24           // Si la diferencia es >= 24, mantB se hace cero
+    bge mantB_a_cero
+    lsr r8, r8, r6        // Desplazar mantB a la derecha r6 bits
+    mov r0, r4            // r0 = exponente máximo
+    mov r1, r7            // r1 = mantA alineada
+    mov r2, r8            // r2 = mantB alineada
+    b exp_alineados
+
+mantB_a_cero:
+    mov r8, #0            // mantB = 0 (desplazamiento total)
+    mov r0, r4
+    mov r1, r7
+    mov r2, r8
+    b exp_alineados
+
+// --- expB > expA: desplazar mantA a la derecha ---
+expB_mayor:
+    sub r6, r5, r4        // r6 = expB - expA
+    cmp r6, #24
+    bge mantA_a_cero
+    lsr r7, r7, r6        // Desplazar mantA a la derecha r6 bits
+    mov r0, r5            // r0 = exponente máximo
+    mov r1, r7            // r1 = mantA alineada
+    mov r2, r8            // r2 = mantB alineada
+    b exp_alineados
+
+mantA_a_cero:
+    mov r7, #0            // mantA = 0 (desplazamiento total)
+    mov r0, r5
+    mov r1, r7
+    mov r2, r8
+    b exp_alineados
+
+// --- Return ---
+exp_alineados:
+    pop {r4-r8, lr}
+    bx lr
+
+
+
+
+
+
+/*************Función realizar_resta*************/
+/* Descripción:
+    Realiza la resta de dos números en formato IEEE-754.
+    Entradas: 
+        r0 = A (IEEE-754)
+        r1 = B (IEEE-754)
+    Salidas:
+        r0 = Resultado de la resta (IEEE-754)
+ */
+
+realizar_resta:
+    push {r4-r11, lr}
+
+    // Guardar copias de A y B originales
+    mov r10, r0   // copia de A
+    mov r11, r1   // copia de B
+
+    // Extraer campos de A
+    BL extraer_campos
+    mov r4, r0   // sA
+    mov r5, r1   // eA
+    mov r6, r2   // mA
+
+    // Extraer campos de B
+    mov r0, r11  // B en r0
+    BL extraer_campos
+    mov r7, r0   // sB
+    mov r8, r1   // eB
+    mov r9, r2   // mB
+
+    // Se preparan los parámetros para pasarlos a la función alinear_exponentes
+    mov r0, r5 // r0 = expA
+    mov r1, r6 // r1 = mantA
+    mov r2, r8 // r2 = expB
+    mov r3, r9 // r3 = mantB
+
+    // Se llama a la función alinear_exponentes
+    BL alinear_exponentes
+    // Se tiene ahora que r0 = expMax, r1 = mantA alineada, r2 = mantB alineada
+
+    
+
+
+
+
+
+
+
         
 finish:
-        b       finish          // Loop infinito para bloquear ejecución
+        b       finish          // Loop infinito para terminar el programa
 
         .data
 R:      .ds.l  N
