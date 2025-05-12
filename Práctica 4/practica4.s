@@ -303,6 +303,10 @@ realizar_resta:
     BL alinear_exponentes
     // Se tiene ahora que r0 = expMax, r1 = mantA alineada, r2 = mantB alineada
 
+
+    pop {r4-r11, lr}
+    bx lr // Devuelve resultado en r0
+
     
 
 
