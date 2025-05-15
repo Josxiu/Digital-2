@@ -357,21 +357,26 @@ resta4:
 
     //En este punto: r5 = signResult, r3 = mantizaResult, r0 = expMax
 
-loop2:
-    and r8, r3, #1 //mascara para saber si el msb es 0 o 1, para hacer normalización 
 
-    cmp r8, #0
-    beq shiftIzq
-    //bne entregaResult
-    pop {r4-r11, lr}
-    bx lr // Devuelve resultado en r0
+normalizar:
 
-shiftIzq:
-    lsl r9, r3, #1 //shift a la izquierda 1 bit para normalizar
-    b loop2
+    cmp r3, #0 //compara si r3 == 0
+    beq armar_resultado
+
+
+    tst r3, #(1 << 23)
+    bne armar_resultado
+    lsl r3, r3, #1
+    sub r0, r0, #1
+    cmp r0, #0
+    beq armar_resultado // Si exponente llega a 0, termina
+    b normalizar
 
 entregaResult:
-    ldr r10, =R
+    @ ldr r10, =R
+
+    cmp r3, #0
+    moveq r0, #0
 
     lsl r5, r5, #31
     lsl r0, r0, #23
@@ -379,18 +384,10 @@ entregaResult:
     orr r0, r5, r0
     orr r0, r0, r3
 
-    str r0, [r10], #4
-
-
-
-
+    @ str r0, [r10], #4 agergo a la lista R
     
-
-
-
-
-
-
+    pop {r4-r11, lr}
+    bx lr // Devuelve resultado en r0
 
         
 finish:
