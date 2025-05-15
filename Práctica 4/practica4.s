@@ -34,6 +34,10 @@ loop:       // for (i = 0; i < N; i++)
 
     BL realizar_resta // r0 = realizar_resta(r0, r1)
 
+    b entregaResult
+
+
+
 
 /* Almacenar R[i] */
 guardar_resultado:
@@ -73,7 +77,7 @@ extraer_campos:
     lsr r1, r3, #23 // Desplazar a la derecha 23 bits
     and r1, r1, #0xFF // Se elimina el bit del signo usando una máscara
 
-    // Extraer mantisa bits 22:0
+    // Extraer fracción bits 22:0
     lsl r2, r3, #9 // Desplazar a la izquierda 9 bits para eliminar el signo y el exponente
     lsr r2, r2, #9 // Desplazar a la derecha 9 bits para volver a la posición original
     
@@ -104,21 +108,21 @@ verificar_casos:
 
     // Extraer campos de A
     BL extraer_campos
-    mov r4, r0   // sA
-    mov r5, r1   // eA
-    mov r6, r2   // mA
+    mov r4, r0   // signo A
+    mov r5, r1   // exponente A
+    mov r6, r2   // fracción A
 
     // Extraer campos de B
-    mov r0, r11  // B en r0
+    mov r0, r11  // guarda B en r0 para pasarlo como paramatero a extraer_campos
     BL extraer_campos
-    mov r7, r0   // sB
-    mov r8, r1   // eB
-    mov r9, r2   // mB
+    mov r7, r0   // signo B
+    mov r8, r1   // exponente B
+    mov r9, r2   // fracción B
 
     // --- NaN o infinito en A ---
     cmp r5, #0xFF
     bne check_B
-    cmp r6, #0      // Si el exponente es 255, y m != 0, A es NaN
+    cmp r6, #0      // Si el exponente es 255, y fraccion != 0, A es NaN
     bne retornar_A    // A es NaN
     // Si mantisa es 0, A es infinito, se verifica si B también lo es
     b check_ab_inf
@@ -299,13 +303,86 @@ realizar_resta:
     mov r2, r8 // r2 = expB
     mov r3, r9 // r3 = mantB
 
+
+
     // Se llama a la función alinear_exponentes
     BL alinear_exponentes
     // Se tiene ahora que r0 = expMax, r1 = mantA alineada, r2 = mantB alineada
 
+    // Compara r4 con 0
+    cmp r4, #0
+    bne checkR4Eq1  // Si r4 != 0, va a check_r4_eq_1
 
+
+    //Se 
+    // Aquí r4 == 0
+    cmp r7, #0
+    beq resta1        // r4==0 && r7==0
+    bne resta3        // r4==0 && r7==1
+
+checkR4Eq1:
+    // Aquí r4 == 1 (porque r4 != 0)
+    cmp r7, #1
+    beq resta2        // r4==1 && r7==1
+    bne resta4        // r4==1 && r7==0
+
+resta1:
+    sub r3, r1, r2
+
+    cmp r1, r2
+    movge r5, #0 
+    movlt r5, #1
+
+    b loop2
+
+resta2:
+    sub r3, r2, r1
+
+    cmp r2, r1
+    movge r5, #0 
+    movlt r5, #1
+
+    b loop2
+
+resta3:
+    add r3, r1, r2
+
+    b loop2
+
+resta4:
+    add r3, r1, r2
+    mov r5, #1
+
+    b loop2
+
+    //En este punto: r5 = signResult, r3 = mantizaResult, r0 = expMax
+
+loop2:
+    and r8, r3, #1 //mascara para saber si el msb es 0 o 1, para hacer normalización 
+
+    cmp r8, #0
+    beq shiftIzq
+    //bne entregaResult
     pop {r4-r11, lr}
     bx lr // Devuelve resultado en r0
+
+shiftIzq:
+    lsl r9, r3, #1 //shift a la izquierda 1 bit para normalizar
+    b loop2
+
+entregaResult:
+    ldr r10, =R
+
+    lsl r5, r5, #31
+    lsl r0, r0, #23
+
+    orr r0, r5, r0
+    orr r0, r0, r3
+
+    str r0, [r10], #4
+
+
+
 
     
 
