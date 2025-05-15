@@ -1,5 +1,5 @@
 .global _start
-        .equ    N, 4
+        .equ    N, 10
         .text
 _start:
     // Cargar el número de restas a realizar
@@ -132,6 +132,8 @@ check_B:
     bne caso_normal
     cmp r9, #0
     bne retornar_B    // B es NaN
+	eor r8, r8, #(1<<31)
+	b retornar_B
 
 check_ab_inf:
     // Ambos infinitos: A inf - B inf = NaN (quiet NaN)
@@ -306,13 +308,13 @@ realizar_resta:
     // Se tiene ahora que r0 = expMax, r1 = mantA alineada, r2 = mantB alineada
 
     // Compara r4 con 0
-    cmp r4, #0
+    cmp r4, #0 // r4 = signoA
     bne checkR4Eq1  // Si r4 != 0, va a check_r4_eq_1
 
 
     //Se 
     // Aquí r4 == 0
-    cmp r7, #0
+    cmp r7, #0 // r7 = signoB
     beq resta1        // r4==0 && r7==0
     bne resta3        // r4==0 && r7==1
 
@@ -366,11 +368,11 @@ normalizar:
     cmp r3, #0 //compara si r3 == 0
     beq armar_resultado
 
-    tst r3, #(1 << 23)
+    tst r3, #(1 << 23) //Verificar 1 al inicio de la mantisa
     bne armar_resultado
-    lsl r3, r3, #1
-    sub r0, r0, #1
-    cmp r0, #0
+    lsl r3, r3, #1 // desplaza la mantiza a la izquierda
+    sub r0, r0, #1 // resta al exponente un 1
+    cmp r0, #0 // compara exponente con 0
     beq armar_resultado // Si exponente llega a 0, termina
     b normalizar
 
@@ -379,14 +381,14 @@ armar_resultado:
     cmp r3, #0
     beq resultado_cero // Si r3 == 0, resultado es cero
 
-    ldr r9, =#0x7FFFFF  
+    ldr r9, =#0x7FFFFF  //Máscara para eliminar el bit antes de la mantisa 1.M
 
     and r3, r3, r9 // Eliminar el bit 23
-    lsl r5, r5, #31
-    lsl r0, r0, #23
+    lsl r5, r5, #31 // Mueve el signo resultante al bit 31
+    lsl r0, r0, #23 // mueve el exponente
 
-    orr r0, r5, r0
-    orr r0, r0, r3
+    orr r0, r5, r0 // agrega el signo a r0 usando un or
+    orr r0, r0, r3 // agrega la mantiza a r0 usando un or
     
     pop {r4-r11, lr}
     bx lr // Devuelve resultado en r0
@@ -418,5 +420,5 @@ finish:
 
         .data
 R:      .ds.l  N
-A:      .dc.l  0x671706BF, 0xFF800000, 0xFFFFFFFF, 0x7F800000
-B:      .dc.l  0xE4415050, 0xE4415050, 0xE4415050, 0xFF800000
+A:    .dc.l    0xC5192000, 0x3C767000, 0xC5648000, 0xE564C000, 0x4EFD0000, 0xCEFD0000, 0xFFFFFFFF, 0xC5192000, 0xC5192000, 0x7F800000
+B:    .dc.l    0xFF800000, 0x3CF70A00, 0x44CA4000, 0x64DA4000, 0x4EFD0000, 0x80000000, 0xFF800000, 0xFF800000, 0x7F800000, 0x7F800000
