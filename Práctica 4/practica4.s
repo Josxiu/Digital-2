@@ -31,12 +31,10 @@ loop:       // for (i = 0; i < N; i++)
     CMP r0, #0 // si r0 == 0, no hay casos especiales y se procede a la resta
     BNE guardar_resultado // si r0 != 0, se omite la resta
 
-
+	
+	LDR r0, [r4, r7, LSL #2] // Cargar A[i] en r0
+    LDR r1, [r5, r7, LSL #2] // Cargar B[i] en r1
     BL realizar_resta // r0 = realizar_resta(r0, r1)
-
-    b entregaResult
-
-
 
 
 /* Almacenar R[i] */
@@ -77,7 +75,7 @@ extraer_campos:
     lsr r1, r3, #23 // Desplazar a la derecha 23 bits
     and r1, r1, #0xFF // Se elimina el bit del signo usando una máscara
 
-    // Extraer fracción bits 22:0
+    // Extraer mantisa bits 22:0
     lsl r2, r3, #9 // Desplazar a la izquierda 9 bits para eliminar el signo y el exponente
     lsr r2, r2, #9 // Desplazar a la derecha 9 bits para volver a la posición original
     
@@ -108,21 +106,21 @@ verificar_casos:
 
     // Extraer campos de A
     BL extraer_campos
-    mov r4, r0   // signo A
-    mov r5, r1   // exponente A
-    mov r6, r2   // fracción A
+    mov r4, r0   // sA
+    mov r5, r1   // eA
+    mov r6, r2   // mA
 
     // Extraer campos de B
-    mov r0, r11  // guarda B en r0 para pasarlo como paramatero a extraer_campos
+    mov r0, r11  // B en r0
     BL extraer_campos
-    mov r7, r0   // signo B
-    mov r8, r1   // exponente B
-    mov r9, r2   // fracción B
+    mov r7, r0   // sB
+    mov r8, r1   // eB
+    mov r9, r2   // mB
 
     // --- NaN o infinito en A ---
     cmp r5, #0xFF
     bne check_B
-    cmp r6, #0      // Si el exponente es 255, y fraccion != 0, A es NaN
+    cmp r6, #0      // Si el exponente es 255, y m != 0, A es NaN
     bne retornar_A    // A es NaN
     // Si mantisa es 0, A es infinito, se verifica si B también lo es
     b check_ab_inf
@@ -265,8 +263,6 @@ exp_alineados:
 
 
 
-
-
 /*************Función realizar_resta*************/
 /* Descripción:
     Realiza la resta de dos números en formato IEEE-754.
@@ -333,7 +329,7 @@ resta1:
     movge r5, #0 
     movlt r5, #1
 
-    b loop2
+    b normalizar
 
 resta2:
     sub r3, r2, r1
@@ -342,27 +338,33 @@ resta2:
     movge r5, #0 
     movlt r5, #1
 
-    b loop2
+    b normalizar
 
 resta3:
     add r3, r1, r2
-
-    b loop2
+    b verificar_carry
 
 resta4:
     add r3, r1, r2
     mov r5, #1
+    b verificar_carry
 
-    b loop2
+verificar_carry:
+    tst r3, #(1 << 24)      // ¿Hay carry en el bit 24?
+    beq normalizar          // Si no hay carry, sigue normalizando
+    lsr r3, r3, #1          // Si hay carry, desplaza a la derecha
+    add r0, r0, #1          // Suma 1 al exponente
+    cmp r0, #255            // ¿Overflow?
+    bge resultado_infinito
+    b normalizar
 
     //En este punto: r5 = signResult, r3 = mantizaResult, r0 = expMax
 
-
+// Normalizar: buscar que el bit 23 de r3 sea 1
 normalizar:
 
     cmp r3, #0 //compara si r3 == 0
     beq armar_resultado
-
 
     tst r3, #(1 << 23)
     bne armar_resultado
@@ -370,24 +372,45 @@ normalizar:
     sub r0, r0, #1
     cmp r0, #0
     beq armar_resultado // Si exponente llega a 0, termina
-    b normalizar
+    b normalizar
 
-entregaResult:
-    @ ldr r10, =R
+armar_resultado:
 
     cmp r3, #0
-    moveq r0, #0
+    beq resultado_cero // Si r3 == 0, resultado es cero
 
+    ldr r9, =#0x7FFFFF  
+
+    and r3, r3, r9 // Eliminar el bit 23
     lsl r5, r5, #31
     lsl r0, r0, #23
 
     orr r0, r5, r0
     orr r0, r0, r3
-
-    @ str r0, [r10], #4 agergo a la lista R
     
     pop {r4-r11, lr}
     bx lr // Devuelve resultado en r0
+
+
+resultado_infinito:
+    lsl r5, r5, #31
+    mov r0, #0xFF    // Exponente todo 1s, mantisa 0
+    lsl r0, r0, #23 
+    orr r0, r0, r5
+    pop {r4-r11, lr}
+    bx lr
+
+
+resultado_cero:
+    mov r0, #0
+    pop {r4-r11, lr}
+    bx lr
+
+
+
+
+
+
 
         
 finish:
@@ -395,5 +418,5 @@ finish:
 
         .data
 R:      .ds.l  N
-A:      .dc.l  0x1E06B852, 0x671706BF, 0xFFFFFFFF, 0x7F800000
-B:      .dc.l  0x1E86B852, 0xE4415050, 0xE4415050, 0xFF800000
+A:      .dc.l  0x671706BF, 0xFF800000, 0xFFFFFFFF, 0x7F800000
+B:      .dc.l  0xE4415050, 0xE4415050, 0xE4415050, 0xFF800000
