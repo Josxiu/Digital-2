@@ -2,21 +2,24 @@
  * This module is the ALU of the Datapath Unit
  */ 
 module alu #(parameter N = 4) (A, B, ALUControl, Result, ALUFlags);
-	input logic  [1:0] ALUControl;
+	input logic  [2:0] ALUControl; // Se usan 3 bits ahora para agregar más instrucciones
 	input logic  [N-1:0] A, B;
 	output logic [N-1:0] Result;
 	output logic [3:0] ALUFlags;
 
 	logic Cout;
-
+	// 000: ADD, 001: SUB, 010: AND, 011: ORR
 	always_comb begin
 		Cout = 1'b0;
 		case (ALUControl)
-			2'b11: begin
+			3'b011: begin
 				Result = A | B;
 			end
-			2'b10: begin
+			3'b010: begin
 				Result = A & B;
+			end
+			3'b100: begin // Se grega el MOV
+				Result = B;
 			end
 			default: begin
 				{Cout, Result} = {1'b0, A} + {1'b0, (ALUControl[0] == 1'b0 ? B : ~B)} + ALUControl[0];

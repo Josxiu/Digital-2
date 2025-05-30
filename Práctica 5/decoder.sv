@@ -7,8 +7,10 @@ module decoder(input logic [1:0] Op,
 					output logic [1:0] FlagW,
 					output logic PCS, RegW, MemW,
 					output logic MemtoReg, ALUSrc,
-					output logic [1:0] ImmSrc, RegSrc, ALUControl,
-					output logic NoWrite // Nueva señal para agregar cmp
+					output logic [1:0] ImmSrc, RegSrc,
+					output logic [1:0] ALUControl,
+					output logic NoWrite,
+					output logic MovOp             // <--- nueva salida
 					);
 	// Internal signals
 	logic [9:0] controls;
@@ -34,26 +36,30 @@ module decoder(input logic [1:0] Op,
 	assign {RegSrc, ImmSrc, ALUSrc, MemtoReg, RegW, MemW, Branch, ALUOp} = controls;
 
 	// ALU Decoder
-	always_comb
-		if (ALUOp) begin // which DP Instr?
-            case(Funct[4:1])
-                4'b0100: begin ALUControl = 2'b00; NoWrite = 1'b0; end // ADD
-                4'b0010: begin ALUControl = 2'b01; NoWrite = 1'b0; end // SUB
-                4'b0000: begin ALUControl = 2'b10; NoWrite = 1'b0; end // AND
-                4'b1100: begin ALUControl = 2'b11; NoWrite = 1'b0; end // ORR
-                4'b1010: begin ALUControl = 2'b01; NoWrite = 1'b1; end // CMP (SUB, pero NoWrite=1)
-                default: begin ALUControl = 2'bx;  NoWrite = 1'b0; end // unimplemented
-            endcase
+	always_comb begin
+		if (ALUOp) begin
+			// detect MOV
+			MovOp = (Funct[4:1] == 4'b1101);
+			case (Funct[4:1])
+				4'b0100: begin ALUControl = 2'b00; NoWrite = 1'b0; end // ADD
+				4'b0010: begin ALUControl = 2'b01; NoWrite = 1'b0; end // SUB
+				4'b0000: begin ALUControl = 2'b10; NoWrite = 1'b0; end // AND
+				4'b1100: begin ALUControl = 2'b11; NoWrite = 1'b0; end // ORR
+				4'b1010: begin ALUControl = 2'b01; NoWrite = 1'b1; end // CMP
+				4'b1101: begin ALUControl = 2'b00; NoWrite = 1'b0; end // MOV (pero lo bypasseamos)
+				default: begin ALUControl = 2'bx; NoWrite = 1'b0; end
+			endcase
 
-			// update flags if S bit is set (C & V only for arith)
 			FlagW[1] = Funct[0];
-			FlagW[0] = Funct[0] & (ALUControl == 2'b00 | ALUControl == 2'b01);
-		end 
-		else begin
-			ALUControl = 2'b00; // add for non-DP instructions
-			FlagW = 2'b00; // don't update Flags
-			NoWrite = 1'b0; // 
+			FlagW[0] = Funct[0] & (ALUControl == 2'b00 || ALUControl == 2'b01);
 		end
+		else begin
+			MovOp      = 1'b0;
+			ALUControl = 2'b00;
+			FlagW      = 2'b00;
+			NoWrite    = 1'b0;
+		end
+	end
 			
 	// PC Logic
 	assign PCS = ((Rd == 4'b1111) & RegW) | Branch;
