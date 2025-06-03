@@ -3,7 +3,6 @@
  */ 
 module top(input logic clk, nreset,
 			  input logic [9:0] switches,
-			  input logic button,
 			  output logic [9:0] leds);
 
 	// Internal signals
@@ -17,7 +16,7 @@ module top(input logic clk, nreset,
 	imem imem(PC, Instr);
 
 	// Instantiate data memory (RAM + peripherals)
-	dmem dmem(clk, MemWrite, DataAdr, WriteData, ReadData, switches, leds, ~button);
+	dmem dmem(clk, MemWrite, DataAdr, WriteData, ReadData, switches, leds);
 
 	// Instantiate processor
 	arm arm(clk, reset, PC, Instr, MemWrite, DataAdr, WriteData, ReadData);
