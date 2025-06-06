@@ -5,11 +5,12 @@ module borrador_testbench_peripherals();
 	logic clk;
 	logic reset;
 	logic [9:0] switches, leds;
+	logic button; // nueva señal para el botón
 
 	localparam DELAY = 10;
 	
 	// instantiate device to be tested
-	top dut(clk, reset, switches, leds);
+	top dut(clk, reset, switches, button, leds);
 
 	// initialize test
 	initial
@@ -17,8 +18,11 @@ module borrador_testbench_peripherals();
 		reset <= 0; #DELAY; 
 		reset <= 1; 
 		
-		switches <= 10'd4; #(DELAY*2000);
-		
+		switches <= 10'd4;
+		button <= 1; // boton no presionado
+		#(DELAY*2000);
+		button <= 0; // boton presionado
+		#(DELAY*100);
 		$stop;
 	end
 
