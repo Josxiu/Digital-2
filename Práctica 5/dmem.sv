@@ -3,7 +3,7 @@
  * It corresponds to the RAM array and some external peripherals
  */ 
 module dmem(input logic clk, we, input logic [31:0] a, wd, output logic [31:0] rd,
-            input logic [9:0] switches, output logic [9:0] leds);
+            input logic [9:0] switches, output logic [9:0] leds, input logic button);
 	// Internal array for the memory (Only 64 32-words)
 	logic [31:0] RAM[63:0];
 
@@ -18,6 +18,8 @@ module dmem(input logic clk, we, input logic [31:0] a, wd, output logic [31:0] r
 	always_comb
 		if (a == 32'hC000_0000)			// Read from Switches (10-bits)
 			rd = {22'b0, switches};
+		else if (a == 32'hC000_0008)    // Read from Button (1-bit)
+			rd = {31'b0, button};		// Button is a single bit, so we fill the rest with 0s 
 		else									// Reading from 0 to 252 retrieves data from RAM array
 			rd = RAM[a[31:2]]; 			// Word aligned (multiple of 4)
 	
