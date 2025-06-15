@@ -15,14 +15,25 @@ module borrador_testbench_peripherals();
 	// initialize test
 	initial
 	begin
+		button <= 1;      // Inicializa el botón como no presionado
 		reset <= 0; #DELAY; 
 		reset <= 1; 
 		
-		switches <= 10'd4;
+		switches <= 10'd0;
+		#(DELAY*1000);
+		switches <= 10'd1;
+		#(DELAY*1000);
+		switches <= 10'd0;
 		button <= 1; // boton no presionado
-		#(DELAY*2000);
+		#(DELAY*100);
 		button <= 0; // boton presionado
 		#(DELAY*100);
+		button <= 1; // boton no presionado
+		#(DELAY*100);
+		button <= 0; // boton presionado
+		#(DELAY*100);
+		button <= 1; // boton no presionado
+		#(DELAY*1000);
 		$stop;
 	end
 
