@@ -10,7 +10,8 @@ module decoder(
     output logic       MemtoReg, ALUSrc,
     output logic [1:0] ImmSrc, RegSrc,
     output logic [2:0] ALUControl,
-    output logic       NoWrite // Nueva señal para agregar cmp
+    output logic       NoWrite, // Nueva señal para agregar cmp
+    output logic       Link      // Nueva señal para agregar link
 );
 
 	// Internal signals
@@ -28,14 +29,19 @@ module decoder(
 			2'b01: 	if (Funct[0])	controls = 10'b0001111000;
 											// STR
 						else				controls = 10'b1001110100;
-											// B
-			2'b10: 						controls = 10'b0110100010;
-											// Unimplemented
+											
+			2'b10: 	if (Funct[4]) controls = 10'b0110101010; // Es BL
+                                 // Para BL, activamos RegW para guardar el LR.
+         
+                  else          controls = 10'b0110100010; // Es una instrucción B normal
+                                 // Para B, RegW está desactivado.
+                  
+											
 			default: 					controls = 10'bx;
 		endcase
 		
 	assign {RegSrc, ImmSrc, ALUSrc, MemtoReg, RegW, MemW, Branch, ALUOp} = controls;
-
+   assign Link = Branch && Funct[4]; // Se agrega Link para Branch con LR
 	// ALU Decoder
 	always_comb begin
       // CMP no escribe en el banco de registros
