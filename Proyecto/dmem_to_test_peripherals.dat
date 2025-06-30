@@ -1,0 +1,18 @@
+// Dirección 0x00: Dirección base de periféricos
+C0000000
+
+// Dirección 0x04: Valor para el contador de delay
+00000005 // Para probar en fpga cambiar por 002FAF08
+
+// Dirección 0x08: Valores para los displays
+// Cada valor es una palabra de 32 bits.
+0000003F // 0 -> para el número 0
+00000006 // 1 -> para el número 1
+0000005B // 2 -> para el número 2
+0000004F // 3 -> para el número 3
+00000066 // 4 -> para el número 4
+0000006D // 5 -> para el número 5
+0000007D // 6 -> para el número 6
+00000007 // 7 -> para el número 7
+0000007F // 8 -> para el número 8
+0000006F // 9 -> para el número 9
