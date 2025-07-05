@@ -6,7 +6,8 @@ module dmem(input logic clk, we, input logic [31:0] a, wd, output logic [31:0] r
             input logic [9:0] switches, output logic [9:0] leds, input logic button,
 			// Nuevas señales para el ADC y los displays
 			input logic [11:0] adc_value,
-			output logic [7:0] display0, display1, display2 // Señales para los displays de 7 segmentos
+			output logic [7:0] display0, display1, display2, // Señales para los displays de 7 segmentos
+			output logic [10:0]  pwm_duty // <-- NUEVA SALIDA para el ciclo de trabajo
 			);
 	// Internal array for the memory (Only 64 32-words)
 	logic [31:0] RAM[63:0];
@@ -41,6 +42,8 @@ module dmem(input logic clk, we, input logic [31:0] a, wd, output logic [31:0] r
 				display1 <= wd[7:0];
 			else if (a == 32'hC000_0018)
 				display2 <= wd[7:0];
+			else if (a == 32'hC000_001C)
+				pwm_duty <= wd[10:0];
 			else	
 				RAM[a[31:2]] <= wd;
 	end	

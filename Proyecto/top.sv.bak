@@ -38,9 +38,9 @@ module top(input logic clk, nreset,
 	dmem dmem(clk, MemWrite, DataAdr, WriteData, ReadData, switches, leds, ~button, adc_value, Tdisplay0, Tdisplay1, Tdisplay2, pwm_duty_cycle);
 
 	// Se invierten los displays para que se vean correctamente
-	assign display0 = ~Tdisplay0;
-	assign display1 = ~Tdisplay1;
-	assign display2 = ~Tdisplay2;
+	assign display0 = Tdisplay0;
+	assign display1 = Tdisplay1;
+	assign display2 = Tdisplay2;
 
 	// Instantiate processor
 	arm arm(clk, reset, PC, Instr, MemWrite, DataAdr, WriteData, ReadData);
