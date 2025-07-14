@@ -2,7 +2,7 @@
 C0000000
 
 // Dirección 0x04: Valor para el contador de delay
-00000005 // Para probar en fpga cambiar por 002FAF08
+0x5F5E10 // Para probar en fpga cambiar por 0x5F5E10
 
 // Dirección 0x08: Valores para los displays
 // Cada valor es una palabra de 32 bits.
