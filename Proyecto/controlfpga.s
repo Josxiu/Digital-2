@@ -21,7 +21,12 @@ main_loop:
     MOV     R0, R6              // Carga el parámetro Temp*10 para el motor.
     MOV     R1, R4              // Carga el parámetro DirBase de periféricos.
     BL      _control_motor_pwm    // Llama a la función de control del motor.
-
+	
+	ldr r7, [r12, #4] // delay
+	delay:
+	subs r7, r7, #1
+	bne delay
+	
     B       main_loop
 
 //=============================================================================
