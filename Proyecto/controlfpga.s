@@ -102,6 +102,7 @@ _actualizar_displays:
     ADD     R1, R5, R1          // R1 = dirección del patrón de segmentos para decenas
     LDR     R2, [R1, #0]        // R2 = patrón de segmentos para decenas
     ADD     R3, R4, #24         // R3 = dirección del display 2 (decenas)
+    EOR     R2, R2, #0XFF       // Se invierte antes de escribir en el display de la fpga
     STR     R2, [R3, #0]        // Muestra el dígito de decenas en el display 2
 
     // Display 1 (Unidades, R8) con punto decimal
@@ -110,6 +111,7 @@ _actualizar_displays:
     LDR     R2, [R1, #0]        // R2 = patrón de segmentos para unidades
     ORR     R2, R2, #128        // Activa el punto decimal en el display de unidades
     ADD     R3, R4, #20         // R3 = dirección del display 1 (unidades)
+    EOR     R2, R2, #0XFF       // Se invierte antes de escribir en el display de la fpga
     STR     R2, [R3, #0]        // Muestra el dígito de unidades (con punto) en el display 1
 
     // Display 0 (Decimal, R9)
@@ -117,6 +119,7 @@ _actualizar_displays:
     ADD     R1, R5, R1          // R1 = dirección del patrón de segmentos para el decimal
     LDR     R2, [R1, #0]        // R2 = patrón de segmentos para el decimal
     ADD     R3, R4, #16         // R3 = dirección del display 0 (decimal)
+    EOR     R2, R2, #0XFF       // Se invierte antes de escribir en el display de la fpga
     STR     R2, [R3, #0]        // Muestra el dígito decimal en el display 0
 
     // --- RESTAURAR REGISTROS ---
