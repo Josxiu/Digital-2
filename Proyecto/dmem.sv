@@ -14,8 +14,8 @@ module dmem(input logic clk, we, input logic [31:0] a, wd, output logic [31:0] r
 
 	initial
 		// Uncomment the following line only if you want to load the required data for the peripherals test
-		//$readmemh("dmem_to_test_peripherals.dat",RAM);
-		$readmemh("C:/Users/juanj/Documents/Udea/Digital 2/Lab/Proyecto final/procesador/dmem_to_test_peripherals.dat", RAM);
+		$readmemh("dmem_to_test_peripherals.dat",RAM);
+		//$readmemh("C:/Users/juanj/Documents/Udea/Digital 2/Lab/Proyecto final/procesador/dmem_to_test_peripherals.dat", RAM);
 		// Uncomment the following line only if you want to load the required data for the program made by your group
 		// $readmemh("dmem_made_by_students.dat",RAM);
 	

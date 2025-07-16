@@ -18,7 +18,7 @@ module top(input logic clk, nreset,
 	logic MemWrite;
 	logic [11:0] adc_value; // Señal para el ADC
 	logic [10:0] pwm_duty_cycle; // Señal para controlar el ciclo de trabajo del PWM
-	logic [7:0]  Tdisplay0, Tdisplay1, Tdisplay2;
+	//logic [7:0]  Tdisplay0, Tdisplay1, Tdisplay2;
 
 	// *** ADC converter ***
 	// Instancia del módulo ADC
@@ -36,13 +36,14 @@ module top(input logic clk, nreset,
 	pwm pwm(clk, nreset, pwm_duty_cycle, pwm_out);
 
 	// Instantiate data memory (RAM + peripherals)
-	dmem dmem(clk, MemWrite, DataAdr, WriteData, ReadData, switches, leds, ~button, adc_value, Tdisplay0, Tdisplay1, Tdisplay2, pwm_duty_cycle);
+	dmem dmem(clk, MemWrite, DataAdr, WriteData, ReadData, switches, leds, ~button, adc_value, display0, display1, display2, pwm_duty_cycle);
 
+	/*
 	// Se invierten los displays para que se vean correctamente
 	assign display0 = ~Tdisplay0;
 	assign display1 = ~Tdisplay1;
 	assign display2 = ~Tdisplay2;
-
+	*/
 	// Instantiate processor
 	arm arm(clk, reset, PC, Instr, MemWrite, DataAdr, WriteData, ReadData);
 endmodule
